@@ -1,7 +1,6 @@
 # COA_A_Coala
 ## Team Coala
-
-Air Condtioner Scouter Project
+### Air Condtioner Scouter Project
 
 Our First Project
 
