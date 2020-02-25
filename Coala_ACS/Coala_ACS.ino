@@ -8,14 +8,12 @@
 #define START_2 0x4d  
 #define DATA_LENGTH_H        0  
 #define DATA_LENGTH_L        1  
-#define PM1_0_ATMOSPHERE_H   8  
-#define PM1_0_ATMOSPHERE_L   9  
 #define PM2_5_ATMOSPHERE_H   10  
 #define PM2_5_ATMOSPHERE_L   11  
 #define PM10_ATMOSPHERE_H    12  
 #define PM10_ATMOSPHERE_L    13  
-#define PM2_5_PARTICLE_H   16  
-#define PM2_5_PARTICLE_L   17  
+#define PM2_5_PARTICLE_H     16  
+#define PM2_5_PARTICLE_L     17  
 #define VERSION              26  
 #define ERROR_CODE           27  
 #define CHECKSUM             29 
@@ -25,10 +23,13 @@
 #define btnPin 9
 #define dhtPin 8
 #define pmsPin 7
+#define ledGreen  3
+#define ledYellow 4
+#define ledRed    5
 
 int mode = 1;
 
-int ledPin[] = {0,1,2}; //ledpin number array -green, yellow, red
+int ledPin[] = {ledGreen,ledYellow,ledRed}; //ledpin number array -green, yellow, red
 
 int reading;   //btn 상태
 int previous = LOW;  //btn 이전 상태
@@ -44,7 +45,6 @@ byte bytCount1 = 0;
 byte bytCount2 = 0;  
 unsigned char chrRecv;  
 unsigned char chrData[30];  
-int PM01;  
 int PM25;  
 int PM10;  
 
@@ -63,6 +63,10 @@ void setup()
    mySerial.begin(9600);
    
    pinMode(btnPin, INPUT_PULLUP);
+   pinMode(ledPin[0],OUTPUT);
+   pinMode(ledPin[1],OUTPUT);
+   pinMode(ledPin[2],OUTPUT);
+  
    lcd.begin();
    lcd.backlight();
    dht.begin();
@@ -95,6 +99,25 @@ void loop()
    previous = reading;
 }
 
+void ledStateListener()
+{
+   for(int i = 0 ; i < 3 ; i++)
+      digitalWrite(ledPin[i],LOW);
+
+
+   if (PM25 <= 15  && PM10 <= 30)
+   {
+      digitalWrite(ledPin[0],HIGH);
+   }else if (PM25 <= 35 && PM10 <= 80)
+   {
+      digitalWrite(ledPin[1],HIGH);
+   }else
+   {
+      digitalWrite(ledPin[2],HIGH);
+   }  
+
+}
+
 void infoWrite (int mode)
 {
 
@@ -113,13 +136,10 @@ void infoWrite (int mode)
    } else if (mode == 1)   //pms info print
    {
       lcd.setCursor(0,0);
-      lcd.print("PM1.0=");  
-      lcd.print(PM01);  
-      lcd.setCursor(0,1);
-      lcd.print("PM2.5=");  
+      lcd.print("PM2.5: ");  
       lcd.print(PM25);  
-      lcd.setCursor(8,1);
-      lcd.print(" PM10=");  
+      lcd.setCursor(0,1);
+      lcd.print("PM10 : ");  
       lcd.println(PM10);
    }
    
@@ -163,9 +183,9 @@ void infoUpdate ()
 
          if ((unsigned int) chrData[ERROR_CODE] == 0)
          {
-            PM01  = GetPM_Data(chrData, PM1_0_ATMOSPHERE_H, PM1_0_ATMOSPHERE_L);  
             PM25  = GetPM_Data(chrData, PM2_5_ATMOSPHERE_H, PM2_5_ATMOSPHERE_L);  
             PM10  = GetPM_Data(chrData, PM10_ATMOSPHERE_H, PM10_ATMOSPHERE_L); 
+            ledStateListener();
          } else {
             Serial.println("PMS7003 ERROR");
             infoUpdate();
