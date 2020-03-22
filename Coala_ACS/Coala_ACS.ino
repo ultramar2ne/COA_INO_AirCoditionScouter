@@ -17,9 +17,8 @@
 #define VERSION              26  
 #define ERROR_CODE           27  
 #define CHECKSUM             29 
-
 // pin number
-#define DHTTYPE DHT22
+#define DHTTYPE DHT22  
 #define btnPin 9
 #define dhtPin 8
 #define pmsPin 7
@@ -37,7 +36,7 @@ int previous = LOW;  //btn 이전 상태
 long time = 0;
 long debounce = 1000; 
 
-SoftwareSerial mySerial(7 ,6); // Arudino Uno port RX, TX  for pms7003
+SoftwareSerial mySerial(7 ,6);      // Arudino port RX, TX  for pms7003
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht(dhtPin, DHTTYPE);
 
@@ -58,24 +57,22 @@ unsigned int GetPM_Data(unsigned char chrSrc[], byte bytHigh, byte bytLow)
       
 void setup()
 {
-
    Serial.begin(115200);
    mySerial.begin(9600);
    
-   pinMode(btnPin, INPUT_PULLUP);
+   pinMode(btnPin, INPUT_PULLUP);   //initialize btn with pullup mode
    pinMode(ledPin[0],OUTPUT);
    pinMode(ledPin[1],OUTPUT);
    pinMode(ledPin[2],OUTPUT);
   
+   dht.begin();
    lcd.begin();
    lcd.backlight();
-   dht.begin();
 
    infoUpdate();
 
-   MsTimer2::set(10000,infoUpdate);
+   MsTimer2::set(10000,infoUpdate); // infoUpdate after every 10000ms
    MsTimer2::start();
-
 }
 
 void loop() 
@@ -87,23 +84,21 @@ void loop()
       if (mode == 1)
       {
          mode = 0;
-         Serial.println("mode 0");
+         Serial.println("mode 0");  
       } else{
-
          mode = 1;
          Serial.println("mode 1");
       }
       time = millis();
-      infoWrite(mode);
+      infoWrite(mode); 
    }
    previous = reading;
 }
 
 void ledStateListener()
 {
-   for(int i = 0 ; i < 3 ; i++)
+   for(int i = 0 ; i < 3 ; i++)  //initialize ledstate
       digitalWrite(ledPin[i],LOW);
-
 
    if (PM25 <= 15  && PM10 <= 30)
    {
@@ -115,12 +110,10 @@ void ledStateListener()
    {
       digitalWrite(ledPin[2],HIGH);
    }  
-
 }
 
 void infoWrite (int mode)
 {
-
    lcd.clear();
 
    if (mode == 0)    // dht info print
@@ -146,7 +139,7 @@ void infoWrite (int mode)
 }
 
 void infoUpdate () 
-{
+{  
    // dht update
    humi = dht.readHumidity();
    temp = dht.readTemperature();
@@ -159,9 +152,8 @@ void infoUpdate ()
       infoUpdate();
       return;
    }
-
    // pms update
-   if (mySerial.available())
+   if (mySerial.available())  
    {
       for (int i = 0; i < 32; i++)
       {
@@ -196,9 +188,6 @@ void infoUpdate ()
       Serial.println("PMS7003 NOT available");  
       infoUpdate();
    }
-   
-
    //lcd update
    infoWrite(mode);
-
 }
