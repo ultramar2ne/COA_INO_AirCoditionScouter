@@ -145,10 +145,11 @@ void infoUpdate ()
    // pms update
    pms.wakeUp();
    pms.requestRead();
-   if (pms.readUtil(data))
+   if (pms.readUntil(data))
    {
       PM25 = data.PM_AE_UG_2_5;
       PM10 = data.PM_AE_UG_10_0;
+      ledStateListener();
    }
    else
    {
