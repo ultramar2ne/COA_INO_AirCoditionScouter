@@ -1,27 +1,13 @@
-#include <Wire.h> 
+#include <PMS.h> 
 #include <LiquidCrystal_I2C.h>
 #include <SoftwareSerial.h>  
 #include <DHT.h>
 #include <MsTimer2.h>
 
-#define START_1 0x42  
-#define START_2 0x4d  
-#define DATA_LENGTH_H        0  
-#define DATA_LENGTH_L        1  
-#define PM2_5_ATMOSPHERE_H   10  
-#define PM2_5_ATMOSPHERE_L   11  
-#define PM10_ATMOSPHERE_H    12  
-#define PM10_ATMOSPHERE_L    13  
-#define PM2_5_PARTICLE_H     16  
-#define PM2_5_PARTICLE_L     17  
-#define VERSION              26  
-#define ERROR_CODE           27  
-#define CHECKSUM             29 
 // pin number
 #define DHTTYPE DHT22  
 #define btnPin 9
 #define dhtPin 8
-#define pmsPin 7
 #define ledGreen  3
 #define ledYellow 4
 #define ledRed    5
@@ -39,6 +25,8 @@ long debounce = 1000;
 SoftwareSerial mySerial(7 ,6);      // Arudino port RX, TX  for pms7003
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht(dhtPin, DHTTYPE);
+PMS pms(mySerial);
+PMS::DATA data;
 
 byte bytCount1 = 0;  
 byte bytCount2 = 0;  
@@ -65,6 +53,7 @@ void setup()
    pinMode(ledPin[1],OUTPUT);
    pinMode(ledPin[2],OUTPUT);
   
+   pms.passiveMode();
    dht.begin();
    lcd.begin();
    lcd.backlight();
@@ -152,42 +141,21 @@ void infoUpdate ()
       infoUpdate();
       return;
    }
+
    // pms update
-   if (mySerial.available())  
+   pms.wakeUp();
+   pms.requestRead();
+   if (pms.readUtil(data))
    {
-      for (int i = 0; i < 32; i++)
-      {
-         chrRecv = mySerial.read();
-         if (chrRecv == START_2)
-         {
-            bytCount1 = 2;
-            break;
-         }
-      }
-
-      if (bytCount1 == 2) 
-      {
-         bytCount1 = 0;
-         for (int i = 0; i < 30; i++)
-         {
-            chrData[i] = mySerial.read();
-         }
-
-         if ((unsigned int) chrData[ERROR_CODE] == 0)
-         {
-            PM25  = GetPM_Data(chrData, PM2_5_ATMOSPHERE_H, PM2_5_ATMOSPHERE_L);  
-            PM10  = GetPM_Data(chrData, PM10_ATMOSPHERE_H, PM10_ATMOSPHERE_L); 
-            ledStateListener();
-         } else {
-            Serial.println("PMS7003 ERROR");
-            infoUpdate();
-         }
-      }
-   } else
-   {
-      Serial.println("PMS7003 NOT available");  
-      infoUpdate();
+      PM25 = data.PM_AE_UG_2_5;
+      PM10 = data.PM_AE_UG_10_0;
    }
+   else
+   {
+      Serial.println("PMS7003 ERROR");
+   }
+   pms.sleep();
+
    //lcd update
    infoWrite(mode);
 }
