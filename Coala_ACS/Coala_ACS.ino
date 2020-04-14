@@ -122,7 +122,7 @@ void infoWrite (int mode)
       lcd.print(PM25);  
       lcd.setCursor(0,1);
       lcd.print("PM10 : ");  
-      lcd.println(PM10);
+      lcd.print(PM10);
    }
    
 }
