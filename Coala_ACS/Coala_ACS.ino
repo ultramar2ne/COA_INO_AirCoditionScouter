@@ -1,7 +1,7 @@
-#include <PMS.h> 
 #include <LiquidCrystal_I2C.h>
 #include <SoftwareSerial.h>  
 #include <DHT.h>
+#include <PMS.h> 
 #include <MsTimer2.h>
 
 // pin number
@@ -12,41 +12,29 @@
 #define ledYellow 4
 #define ledRed    5
 
-int mode = 1;
-
-int ledPin[] = {ledGreen,ledYellow,ledRed}; //ledpin number array -green, yellow, red
-
-int reading;   //btn 상태
-int previous = LOW;  //btn 이전 상태
-
-long time = 0;
-long debounce = 1000; 
-
-SoftwareSerial mySerial(7 ,6);      // Arudino port RX, TX  for pms7003
+SoftwareSerial pmsSerial(7 ,6);      // Arudino port RX, TX  for pms7003
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht(dhtPin, DHTTYPE);
 PMS pms(mySerial);
 PMS::DATA data;
 
-byte bytCount1 = 0;  
-byte bytCount2 = 0;  
-unsigned char chrRecv;  
-unsigned char chrData[30];  
+int mode = 1;
+int ledPin[] = {ledGreen,ledYellow,ledRed}; //ledpin number array -green, yellow, red
+
+int reading;   //btn 상태
+int previous = LOW;  //btn 이전 상태
+long time = 0;
+long debounce = 1000; 
+
 int PM25;  
 int PM10;  
-
 float humi;
 float temp;
-      
-unsigned int GetPM_Data(unsigned char chrSrc[], byte bytHigh, byte bytLow)  
-{  
-   return (chrSrc[bytHigh] << 8) + chrSrc[bytLow];  
-}  
       
 void setup()
 {
    Serial.begin(115200);
-   mySerial.begin(9600);
+   pmsSerial.begin(9600);
    
    pinMode(btnPin, INPUT_PULLUP);   //initialize btn with pullup mode
    pinMode(ledPin[0],OUTPUT);
@@ -120,9 +108,11 @@ void infoWrite (int mode)
       lcd.setCursor(0,0);
       lcd.print("PM2.5: ");  
       lcd.print(PM25);  
+      lcd.print(" ug/m3");
       lcd.setCursor(0,1);
       lcd.print("PM10 : ");  
       lcd.print(PM10);
+      lcd.print(" ug/m3");
    }
    
 }
