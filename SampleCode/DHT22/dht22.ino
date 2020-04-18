@@ -1,5 +1,4 @@
 #include <DHT.h>
-
 #define dhtPin 8
 #define DHTTYPE DHT22
 
@@ -15,14 +14,16 @@ void setup()
 
 void loop()
 {
-    delay(3000);
-    humi = dht.readHumidity();
-    temp = dht.readTemperature();
+   delay(3000);
+   humi = dht.readHumidity();
+   temp = dht.readTemperature();
 
-   if (isnan(humi) || isnan(temp)) {
+   if (isnan(humi) || isnan(temp)) 
+   {
       Serial.println(F("Failed to read from DHT sensor!"));
       return;
    }
+    
    Serial.print("Temp : ");
    Serial.print(temp);
    Serial.print(" C , humi : ");
