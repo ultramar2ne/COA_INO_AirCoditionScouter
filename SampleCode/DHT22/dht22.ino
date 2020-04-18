@@ -1,3 +1,4 @@
+// from: https://github.com/adafruit/DHT-sensor-library.git
 #include <DHT.h>
 #define dhtPin 8
 #define DHTTYPE DHT22
