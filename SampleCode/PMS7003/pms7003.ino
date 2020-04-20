@@ -1,4 +1,3 @@
-// from: https://github.com/fu-hsi/PMS.git
 #include "PMS.h"
 #include <SoftwareSerial.h>
 
