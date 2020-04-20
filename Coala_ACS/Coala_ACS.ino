@@ -3,7 +3,6 @@
 #include <DHT.h>
 #include <PMS.h> 
 #include <MsTimer2.h>
-
 // pin number
 #define DHTTYPE DHT22  
 #define btnPin 9
@@ -15,14 +14,14 @@
 SoftwareSerial pmsSerial(7 ,6);      // Arudino port RX, TX  for pms7003
 LiquidCrystal_I2C lcd(0x27, 16, 2);
 DHT dht(dhtPin, DHTTYPE);
-PMS pms(mySerial);
+PMS pms(pmsSerial);
 PMS::DATA data;
 
 int mode = 1;
 int ledPin[] = {ledGreen,ledYellow,ledRed}; //ledpin number array -green, yellow, red
 
-int reading;   //btn 상태
-int previous = LOW;  //btn 이전 상태
+int reading;         //btn state
+int previous = LOW;  //previous btn state
 long time = 0;
 long debounce = 1000; 
 
@@ -33,7 +32,7 @@ float temp;
       
 void setup()
 {
-   Serial.begin(115200);
+   Serial.begin(9600);  
    pmsSerial.begin(9600);
    
    pinMode(btnPin, INPUT_PULLUP);   //initialize btn with pullup mode
@@ -41,7 +40,9 @@ void setup()
    pinMode(ledPin[1],OUTPUT);
    pinMode(ledPin[2],OUTPUT);
   
+   // pms.activeMode();
    pms.passiveMode();
+   pms.wakeUp();
    dht.begin();
    lcd.begin();
    lcd.backlight();
@@ -114,7 +115,6 @@ void infoWrite (int mode)
       lcd.print(PM10);
       lcd.print(" ug/m3");
    }
-   
 }
 
 void infoUpdate () 
@@ -124,28 +124,29 @@ void infoUpdate ()
    temp = dht.readTemperature();
 
    if (isnan(humi) || isnan(temp)) {
-      Serial.println(F("Failed to read from DHT sensor!"));
+      Serial.println(F("DHT sensor ERROR"));
       lcd.setCursor(0,0);
-      lcd.print("Failed to read from DHT sensor!");
+      lcd.print("DHT sensor ERROR");
 
       infoUpdate();
       return;
    }
 
    // pms update
-   pms.wakeUp();
    pms.requestRead();
    if (pms.readUntil(data))
    {
       PM25 = data.PM_AE_UG_2_5;
       PM10 = data.PM_AE_UG_10_0;
       ledStateListener();
-   }
-   else
+   }else
    {
       Serial.println("PMS7003 ERROR");
+      lcd.setCursor(0,0);
+      lcd.print("PMS7003 ERROR");
+      infoUpdate();
+      return;
    }
-   pms.sleep();
 
    //lcd update
    infoWrite(mode);
