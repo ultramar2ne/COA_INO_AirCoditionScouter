@@ -1,70 +1,48 @@
-#include <Wire.h> 
 #include <LiquidCrystal_I2C.h>
 #include <SoftwareSerial.h>  
 #include <DHT.h>
+#include <PMS.h> 
 #include <MsTimer2.h>
-
-#define START_1 0x42  
-#define START_2 0x4d  
-#define DATA_LENGTH_H        0  
-#define DATA_LENGTH_L        1  
-#define PM2_5_ATMOSPHERE_H   10  
-#define PM2_5_ATMOSPHERE_L   11  
-#define PM10_ATMOSPHERE_H    12  
-#define PM10_ATMOSPHERE_L    13  
-#define PM2_5_PARTICLE_H     16  
-#define PM2_5_PARTICLE_L     17  
-#define VERSION              26  
-#define ERROR_CODE           27  
-#define CHECKSUM             29 
 // pin number
 #define DHTTYPE DHT22  
 #define btnPin 9
 #define dhtPin 8
-#define pmsPin 7
 #define ledGreen  3
 #define ledYellow 4
 #define ledRed    5
 
-int mode = 1;
+SoftwareSerial pmsSerial(7 ,6);      // Arudino port RX, TX  for pms7003
+LiquidCrystal_I2C lcd(0x27, 16, 2);
+DHT dht(dhtPin, DHTTYPE);
+PMS pms(pmsSerial);
+PMS::DATA data;
 
+int mode = 1;
 int ledPin[] = {ledGreen,ledYellow,ledRed}; //ledpin number array -green, yellow, red
 
-int reading;   //btn 상태
-int previous = LOW;  //btn 이전 상태
-
+int reading;         //btn state
+int previous = LOW;  //previous btn state
 long time = 0;
 long debounce = 1000; 
 
-SoftwareSerial mySerial(7 ,6);      // Arudino port RX, TX  for pms7003
-LiquidCrystal_I2C lcd(0x27, 16, 2);
-DHT dht(dhtPin, DHTTYPE);
-
-byte bytCount1 = 0;  
-byte bytCount2 = 0;  
-unsigned char chrRecv;  
-unsigned char chrData[30];  
 int PM25;  
 int PM10;  
-
 float humi;
 float temp;
       
-unsigned int GetPM_Data(unsigned char chrSrc[], byte bytHigh, byte bytLow)  
-{  
-   return (chrSrc[bytHigh] << 8) + chrSrc[bytLow];  
-}  
-      
 void setup()
 {
-   Serial.begin(115200);
-   mySerial.begin(9600);
+   Serial.begin(9600);  
+   pmsSerial.begin(9600);
    
    pinMode(btnPin, INPUT_PULLUP);   //initialize btn with pullup mode
    pinMode(ledPin[0],OUTPUT);
    pinMode(ledPin[1],OUTPUT);
    pinMode(ledPin[2],OUTPUT);
   
+   // pms.activeMode();
+   pms.passiveMode();
+   pms.wakeUp();
    dht.begin();
    lcd.begin();
    lcd.backlight();
@@ -131,11 +109,12 @@ void infoWrite (int mode)
       lcd.setCursor(0,0);
       lcd.print("PM2.5: ");  
       lcd.print(PM25);  
+      lcd.print(" ug/m3");
       lcd.setCursor(0,1);
       lcd.print("PM10 : ");  
-      lcd.println(PM10);
+      lcd.print(PM10);
+      lcd.print(" ug/m3");
    }
-   
 }
 
 void infoUpdate () 
@@ -145,49 +124,30 @@ void infoUpdate ()
    temp = dht.readTemperature();
 
    if (isnan(humi) || isnan(temp)) {
-      Serial.println(F("Failed to read from DHT sensor!"));
+      Serial.println(F("DHT sensor ERROR"));
       lcd.setCursor(0,0);
-      lcd.print("Failed to read from DHT sensor!");
+      lcd.print("DHT sensor ERROR");
 
       infoUpdate();
       return;
    }
+
    // pms update
-   if (mySerial.available())  
+   pms.requestRead();
+   if (pms.readUntil(data))
    {
-      for (int i = 0; i < 32; i++)
-      {
-         chrRecv = mySerial.read();
-         if (chrRecv == START_2)
-         {
-            bytCount1 = 2;
-            break;
-         }
-      }
-
-      if (bytCount1 == 2) 
-      {
-         bytCount1 = 0;
-         for (int i = 0; i < 30; i++)
-         {
-            chrData[i] = mySerial.read();
-         }
-
-         if ((unsigned int) chrData[ERROR_CODE] == 0)
-         {
-            PM25  = GetPM_Data(chrData, PM2_5_ATMOSPHERE_H, PM2_5_ATMOSPHERE_L);  
-            PM10  = GetPM_Data(chrData, PM10_ATMOSPHERE_H, PM10_ATMOSPHERE_L); 
-            ledStateListener();
-         } else {
-            Serial.println("PMS7003 ERROR");
-            infoUpdate();
-         }
-      }
-   } else
+      PM25 = data.PM_AE_UG_2_5;
+      PM10 = data.PM_AE_UG_10_0;
+      ledStateListener();
+   }else
    {
-      Serial.println("PMS7003 NOT available");  
+      Serial.println("PMS7003 ERROR");
+      lcd.setCursor(0,0);
+      lcd.print("PMS7003 ERROR");
       infoUpdate();
+      return;
    }
+
    //lcd update
    infoWrite(mode);
 }
